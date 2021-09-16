@@ -10,5 +10,101 @@
   - #define 造成代码膨胀
   - 定义常量指针时，指针本身和所指都需要const : const char* const authorName = "Scott Meyers"
   - class内常量要加static 确保只有一份实体
-  - enum hack 很常用，相比const 它没有地址，且往往这是个优点
-  - 
+  - enum hack 很常用，相比const 它不能取址，且往往这是个优点
+  - 使用inline和template替代函数宏，
+- 03 尽量使用const : Use const whenever possible
+  - 将函数返回值设为const
+  - pass by pointer/reference 时加const
+  - 可以为成员函数加const修饰，当实例为const时调用不同的成员函数
+  - 编译器执行bitwise constness, 但编写程序时更应该遵守logical/conceptual constness
+  - 使用mutable，修饰Const实例中也会被修改的成员变量
+  - 当const和non-const成员函数有几乎等价的实现时，使用non-const调用const,可以复用代码
+- 04 确保对象使用前已经初始化 : Make sure that objects are initialized before they're used
+  - 对内置类型 手工初始化
+  - 构造函数使用 member initialization list, 而不是在函数内赋值
+  - non-local static对象，初始化顺序无法确定 使用local static替代
+- 05 了解C++自动生成的成员函数 : Know what functions C++ silently writes and calls
+  - default构造 copy构造 copy-assignment函数 析构函数 
+  - 有reference 和 const成员变量时，编译器不生成 copy-assignment
+- 06 若不想使用编译器自动生成的函数，就该明确拒绝 : Explicitly disabllow the use of compiler-generated functions you do not want
+  - 将不希望自动生成的函数声明为private，且不实现
+  - 定义个base class，将对应函数设为private
+- 07 为多态基类声明virtual析构函数 : Declare destructors virtual in polymorphic base classes
+  - base class的析构函数 non-virtual时，例如B继承A, A析构非虚，A* a = new B(), delete a 时，将无法析构B中成员变量造成泄漏
+  - 带有多态性质的base class应该声明一个virtual析构函数
+  - 任意一个函数为virtual时，析构函数也应该时virtual
+  - 反之 如果不是作为base class，那就不应该声明virtual析构函数。
+- 08 别让异常逃离析构函数 : Prevent exceptions from leaving destructors
+  - 析构函数绝对不能抛出异常。如果可能产生异常，应该吞下不传播，或直接结束程序
+  - 如果某个操作需要对抛出的异常做出反应，那这个操作应该在普通函数而非析构函数里
+- 09 不要在构造和析构过程中调用virtual函数 : Never call virtual functions during construction or destruction
+  - 构造和析构函数运行时，virtual函数不会被下降到derived class
+- 10 令operator= 返回一个 reference to *this
+  - 为了实现x = y = z = 15这样的连续赋值
+- 11 处理operator= 中的 “自我赋值” : Handle assignment to self in operator=
+  - 写 operator= 时确保自我赋值也是正确的
+  - 一个函数处理多个对象时，确保有对象相同时结果是正确的
+- 12 复制对象时要复制每一个成员 : Copy all parts of an object
+  - 拷贝构造函数和operator=都要注意
+  - 不只要拷贝当前成员变量，也要调用base class的赋值/拷贝复制
+  - 可以写一个init成员函数，做拷贝构造和拷贝复制中共同的部分
+- 13 以对象管理资源 : Use objects to manage resources
+  - RAII (Resource acquisition is initialization) 资源取得立刻初始化
+  - 将资源立刻放入RAII对象中，并在虚构函数中释放
+- 14 资源管理类中小心copying行为 : Thinks carefully about copying behavior in resource-managing classes
+  - 当RAII需要复制时，1)禁止复制 2)引用计数 3)复制低层资源(deep copy) 4)转移所有权
+- 15 在资源管理类中提供对原始资源的访问 : Provide access to raw resources in resource-managing classes
+  - RAII class应该提供一个获取原始资源的方式
+  - 通过显式转换通常比隐式转换更安全
+- 16 new 和 delete要使用相同形式 : Use the same frorm in corresponding use of new and delete
+  - delete 只释放指定内存，delete [] 释放内存同时，调用每一个元素的析构函数
+  - 使用 new 时用 delete，使用new [] 时使用 delete []
+- 17 以独立语句将new出的对象放入智能指针 : Store newed objects in smart pointers in standalone statements
+  - 一个语句内部的执行顺序可能会变化，确保new和放入智能之间不会异常终止，造成资源泄漏
+- 18 让接口容易“正确”使用，不易被误用 : Make interfaces easy to use correctly and hard to use incorrectly
+  - 减少接口被误用的风险
+  - 保持接口的一致性，尽量与共识保持一致
+- 19 设计class犹如设计type : Treat class design as type design
+  - 要考虑很多事情...
+  - 如何创建和销毁
+  - 初始化和赋值有什么差别
+  - 如果被passed by value会发生什么（拷贝构造函数）
+  - 新type的合法值有什么
+  - 继承关系
+  - 新type需要哪些转换
+  - 什么操作赋和函数对新type是合理的
+  - 什么样的标准函数应该被取消
+  - 谁该取用新type的成员
+  - 新type的微声明接口
+  - 新type有多一般化
+  - 是否真的需要一个新type
+- 20 尽量使用pass-by-reference-to-const 替换pass-by-value : Prefer pass-by-reference-to-const to pass-by-value
+  - 通常pass-by-reference-to-const更高效
+  - 但内置类型、STL的迭代器和函数对象来说，pass-by-value更适当
+- 21 必须返回对象时，别妄图返回reference : Don't try to return a reference when you must return an object
+  - 如果在函数内创建对象，其创建在stack上，函数返回时就销毁了
+  - 如果在函数内new一个heap中的对象，面临谁来释放的问题
+- 22 成员变量声明为private : Declare data members private
+  - 提供封装、数据访问一致性、访问控制、实现弹性
+  - protected并不比public更好，尽量避免protected
+- 23 宁以non-member non-frind 替代member函数 : Prefer non-member non-friend functions to member functions
+  - 就像STL一样，将不同部分放在相同的std namespace中，作为non-member函数的utils
+- 24 若所有参数皆需类型转换，请为此采用non-member函数 : Declare non-member functions when type conversions should apply to all parameters
+  - 比如 2 * Ration(1, 3), 要实现const Ration operator*(...lhs, ...rhs)
+- 25 考虑写出一个不抛异常的swap函数 : Consider support for a non-throwing swap
+  - std:swap基于拷贝构造和拷贝赋值, T temp(a); a = b; b = temp;
+  - 如果需要高效的实现，可以在std命名空间编写全特花的swap实现
+  - 如果需要偏特化，只能在自己的命名空间编写swap
+  - 如果swap需要操纵private数据，请将swap作为成员实现在class内，并在外提供一个non-member的swap调用之
+  - member的swap实现一定不要抛出异常
+- 26 尽可能延后变量定义式的出现时间 : Postpone variable definitions as long as possible
+  - 尽可能延后定义式，减少可能的因分支造成的无效构造和析构
+  - 尽可能在定义之初就给初值，用构造代替构造后赋值
+- 27 尽量少做转型动作 : Minimize casting
+  - dynamic_cast 效率很低，很可能是基于字符串匹配的(基于编译器实现)
+  - 如果需要，尽量使用C++的新式转型
+  - 如果转型是必要的，尽量隐藏在函数背后
+- 28 避免返回handles指向对象内部成分 : Avoid returning "handles" to object internals
+  - 如果需要，返回const
+  - 但要注意，返回值的生命周期可能比class长，此时会造成悬空指针/引用
+- 
