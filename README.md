@@ -24,7 +24,7 @@
   - 构造函数使用 member initialization list, 而不是在函数内赋值
   - non-local static对象，初始化顺序无法确定 使用local static替代
 - 05 了解C++自动生成的成员函数 : Know what functions C++ silently writes and calls
-  - default构造 copy构造 copy-assignment函数 析构函数 
+  - default构造 copy构造 copy-assignment函数 析构函数
   - 有reference 和 const成员变量时，编译器不生成 copy-assignment
 - 06 若不想使用编译器自动生成的函数，就该明确拒绝 : Explicitly disabllow the use of compiler-generated functions you do not want
   - 将不希望自动生成的函数声明为private，且不实现
@@ -107,4 +107,10 @@
 - 28 避免返回handles指向对象内部成分 : Avoid returning "handles" to object internals
   - 如果需要，返回const
   - 但要注意，返回值的生命周期可能比class长，此时会造成悬空指针/引用
-- 
+- 29 为“异常安全”而努力是值得的 : Strive for exception-safe code
+  - 使用对象管理资源，避免资源泄漏
+  - 除此之外，提供以下三种之一：
+  - 基本承诺：如果异常抛出，程序内事物依然保证有效，虽然具体内容可能无法预料
+  - 强烈保证：要么全部完成，要么退回初始状态，比如 copy-and-swap实现
+  - 不抛异常
+- 30 透彻了解inlining : Understand the ins and outs of inlining
